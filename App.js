@@ -6,8 +6,8 @@ import * as Font from "expo-font";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import LoginScreen from "./components/Screens/LoginScreen";
-import RegistrationScreen from "./components/Screens/RegistrationScreen";
+import RegistrationScreen from "./Screens/Auth/RegistrationScreen";
+import LoginScreen from "./Screens/Auth/LoginScreen";
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -43,11 +43,6 @@ export default function App() {
     <View style={styles.container} onLayout={onLayoutRootView}>
       <NavigationContainer>
         <AuthStack.Navigator>
-          {/* <AuthStack.Screen
-            options={{ headerShown: false }}
-            name="Login"
-            component={LoginScreen}
-          /> */}
           <AuthStack.Screen
             options={{ headerShown: false }}
             name="Registration"

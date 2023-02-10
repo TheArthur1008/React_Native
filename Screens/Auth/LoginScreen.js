@@ -13,21 +13,27 @@ import {
 } from "react-native";
 
 const initialState = {
-  login: "",
   email: "",
   password: "",
 };
 
-export default function RegistrationScreen({ navigation }) {
+export default function LoginScreen({ navigation }) {
   const [state, setState] = useState(initialState);
+  const [isKeyboardShown, setIsKeyboardShown] = useState(false);
   const [dimensions, setDimansions] = useState(
     Dimensions.get("window").width - 16 * 2
   );
 
   const keyboardHide = () => {
+    setIsKeyboardShown(false);
     Keyboard.dismiss();
     console.log(state);
     setState(initialState);
+  };
+
+  const touchableKeyboard = () => {
+    setIsKeyboardShown(false);
+    Keyboard.dismiss();
   };
 
   useEffect(() => {
@@ -40,7 +46,7 @@ export default function RegistrationScreen({ navigation }) {
   }, []);
 
   return (
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+    <TouchableWithoutFeedback onPress={touchableKeyboard}>
       <ImageBackground
         style={styles.image}
         source={require("../../assets/images/bg-image.png")}
@@ -48,19 +54,14 @@ export default function RegistrationScreen({ navigation }) {
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "heigth"}
         >
-          <View style={styles.container}>
+          <View
+            style={{
+              ...styles.container,
+              paddingBottom: isKeyboardShown ? 32 : 144,
+            }}
+          >
             <View style={{ ...styles.form, width: dimensions }}>
-              <Text style={styles.title}>Регистрация</Text>
-              <View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Логин"
-                  value={state.login}
-                  onChangeText={(value) =>
-                    setState((prevState) => ({ ...prevState, login: value }))
-                  }
-                />
-              </View>
+              <Text style={styles.title}>Войти</Text>
               <View>
                 <TextInput
                   style={styles.input}
@@ -69,6 +70,7 @@ export default function RegistrationScreen({ navigation }) {
                   onChangeText={(value) =>
                     setState((prevState) => ({ ...prevState, email: value }))
                   }
+                  onFocus={() => setIsKeyboardShown(true)}
                 />
               </View>
               <View>
@@ -80,6 +82,7 @@ export default function RegistrationScreen({ navigation }) {
                   onChangeText={(value) =>
                     setState((prevState) => ({ ...prevState, password: value }))
                   }
+                  onFocus={() => setIsKeyboardShown(true)}
                 />
               </View>
               <TouchableOpacity
@@ -87,14 +90,16 @@ export default function RegistrationScreen({ navigation }) {
                 style={styles.button}
                 onPress={keyboardHide}
               >
-                <Text style={styles.textButton}>Зарегистрироваться</Text>
+                <Text style={styles.textButton}>Войти</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.containerLink}
-                onPress={() => navigation.navigate("Login")}
+                onPress={() => navigation.navigate("Registration")}
                 activeOpacity={0.8}
               >
-                <Text style={styles.link}>Уже есть аккаунт? Войти</Text>
+                <Text style={styles.link}>
+                  Нет аккаунта? Зарегистрироваться
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -124,6 +129,7 @@ const styles = StyleSheet.create({
   },
   form: {
     justifyContent: "flex-start",
+    paddingTop: 32,
   },
   input: {
     borderWidth: 1,
@@ -150,7 +156,6 @@ const styles = StyleSheet.create({
   },
   containerLink: {
     alignItems: "center",
-    marginBottom: 78,
   },
   link: {
     color: "#1B4371",
