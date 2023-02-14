@@ -29,6 +29,7 @@ export default function LoginScreen({ navigation }) {
     Keyboard.dismiss();
     console.log(state);
     setState(initialState);
+    navigation.navigate("Home");
   };
 
   const touchableKeyboard = () => {
@@ -48,7 +49,7 @@ export default function LoginScreen({ navigation }) {
   return (
     <TouchableWithoutFeedback onPress={touchableKeyboard}>
       <ImageBackground
-        style={styles.image}
+        style={styles.imageBg}
         source={require("../../assets/images/bg-image.png")}
       >
         <KeyboardAvoidingView
@@ -61,11 +62,11 @@ export default function LoginScreen({ navigation }) {
             }}
           >
             <View style={{ ...styles.form, width: dimensions }}>
-              <Text style={styles.title}>Войти</Text>
+              <Text style={styles.title}>Login</Text>
               <View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Адрес электронной почты"
+                  placeholder="E-mail address"
                   value={state.email}
                   onChangeText={(value) =>
                     setState((prevState) => ({ ...prevState, email: value }))
@@ -77,7 +78,7 @@ export default function LoginScreen({ navigation }) {
                 <TextInput
                   style={styles.input}
                   secureTextEntry={true}
-                  placeholder="Пароль"
+                  placeholder="Password"
                   value={state.password}
                   onChangeText={(value) =>
                     setState((prevState) => ({ ...prevState, password: value }))
@@ -90,7 +91,7 @@ export default function LoginScreen({ navigation }) {
                 style={styles.button}
                 onPress={keyboardHide}
               >
-                <Text style={styles.textButton}>Войти</Text>
+                <Text style={styles.textButton}>Log in</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.containerLink}
@@ -98,7 +99,7 @@ export default function LoginScreen({ navigation }) {
                 activeOpacity={0.8}
               >
                 <Text style={styles.link}>
-                  Нет аккаунта? Зарегистрироваться
+                  You don't have an account? Sign up
                 </Text>
               </TouchableOpacity>
             </View>
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
   },
-  image: {
+  imageBg: {
     flex: 1,
     resizeMode: "cover",
     justifyContent: "flex-end",

@@ -15,8 +15,7 @@ import {
 } from "react-native";
 
 import { AntDesign } from "@expo/vector-icons";
-
-const photoAvatar = require("../../assets/images/avatar.png");
+import * as ImagePicker from "expo-image-picker";
 
 const initialState = {
   avatar: null,
@@ -26,6 +25,7 @@ const initialState = {
 };
 
 export default function RegistrationScreen({ navigation }) {
+  const [avatar, setAvatar] = useState(null);
   const [state, setState] = useState(initialState);
   const [isKeyboardShown, setIsKeyboardShown] = useState(false);
   const [dimensions, setDimansions] = useState(
@@ -37,6 +37,7 @@ export default function RegistrationScreen({ navigation }) {
     Keyboard.dismiss();
     console.log(state);
     setState(initialState);
+    navigation.navigate("Home");
   };
 
   const touchableKeyboard = () => {
@@ -53,10 +54,25 @@ export default function RegistrationScreen({ navigation }) {
     return () => subscription?.remove();
   }, []);
 
+  const pickImage = async () => {
+    // No permissions request is necessary for launching the image library
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setAvatar(result.assets[0].uri);
+      console.log(avatar);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={touchableKeyboard}>
       <ImageBackground
-        style={styles.image}
+        style={styles.imageBg}
         source={require("../../assets/images/bg-image.png")}
       >
         <KeyboardAvoidingView
@@ -68,24 +84,32 @@ export default function RegistrationScreen({ navigation }) {
               paddingBottom: isKeyboardShown ? 16 : 78,
             }}
           >
-            <View style={styles.avatarWrapper}>
-              <Image style={styles.avatarImg} />
-              <Pressable
-                onPress={() => {
-                  console.log("Add photo");
-                }}
-              >
-                <View style={styles.addAvatarIcon}>
-                  <AntDesign name="pluscircleo" size={25} color="#FF6C00" />
-                </View>
-              </Pressable>
+            <View style={styles.avatar}>
+              <Image source={{ uri: avatar }} style={styles.avatarImg} />
+              {avatar ? (
+                <Pressable
+                  onPress={() => {
+                    setAvatar(null);
+                  }}
+                >
+                  <View style={styles.removeAvatarIcon}>
+                    <AntDesign name="closecircleo" size={25} color="#E8E8E8" />
+                  </View>
+                </Pressable>
+              ) : (
+                <Pressable onPress={pickImage}>
+                  <View style={styles.addAvatarIcon}>
+                    <AntDesign name="pluscircleo" size={25} color="#FF6C00" />
+                  </View>
+                </Pressable>
+              )}
             </View>
             <View style={{ ...styles.form, width: dimensions }}>
-              <Text style={styles.title}>Регистрация</Text>
+              <Text style={styles.title}>Registration</Text>
               <View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Логин"
+                  placeholder="Login"
                   value={state.login}
                   onChangeText={(value) =>
                     setState((prevState) => ({ ...prevState, login: value }))
@@ -96,7 +120,7 @@ export default function RegistrationScreen({ navigation }) {
               <View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Адрес электронной почты"
+                  placeholder="E-mail address"
                   value={state.email}
                   onChangeText={(value) =>
                     setState((prevState) => ({ ...prevState, email: value }))
@@ -108,7 +132,7 @@ export default function RegistrationScreen({ navigation }) {
                 <TextInput
                   style={styles.input}
                   secureTextEntry={true}
-                  placeholder="Пароль"
+                  placeholder="Password"
                   value={state.password}
                   onChangeText={(value) =>
                     setState((prevState) => ({ ...prevState, password: value }))
@@ -121,14 +145,16 @@ export default function RegistrationScreen({ navigation }) {
                 style={styles.button}
                 onPress={keyboardHide}
               >
-                <Text style={styles.textButton}>Зарегистрироваться</Text>
+                <Text style={styles.textButton}>Sing up</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.containerLink}
                 onPress={() => navigation.navigate("Login")}
                 activeOpacity={0.8}
               >
-                <Text style={styles.link}>Уже есть аккаунт? Войти</Text>
+                <Text style={styles.link}>
+                  Already have an account? Sign in
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -145,12 +171,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
   },
-  image: {
+  imageBg: {
     flex: 1,
     resizeMode: "cover",
     justifyContent: "flex-end",
   },
-  avatarWrapper: {
+  avatar: {
     position: "absolute",
     flexDirection: "row",
     top: -60,

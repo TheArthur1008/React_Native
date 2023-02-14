@@ -5,9 +5,11 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import RegistrationScreen from "./Screens/Auth/RegistrationScreen";
 import LoginScreen from "./Screens/Auth/LoginScreen";
+import { Home } from "./Screens/Main/Home";
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -38,6 +40,7 @@ export default function App() {
   }
 
   const AuthStack = createNativeStackNavigator();
+  const MainTab = createBottomTabNavigator();
 
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
@@ -52,6 +55,11 @@ export default function App() {
             options={{ headerShown: false }}
             name="Login"
             component={LoginScreen}
+          />
+          <AuthStack.Screen
+            name="Home"
+            component={Home}
+            options={{ headerShown: false }}
           />
         </AuthStack.Navigator>
       </NavigationContainer>
