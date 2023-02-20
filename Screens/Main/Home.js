@@ -36,24 +36,7 @@ export const Home = ({ navigation }) => {
         name="Posts"
         component={PostsScreen}
         options={{
-          headerTitleStyle: {
-            fontSize: 17,
-            fontFamily: "Roboto-Medium",
-            color: "#212121",
-          },
-          headerRight: () => (
-            <Pressable
-              onPress={() => navigation.navigate("Login")}
-              style={{ position: "absolute", right: 16 }}
-            >
-              <MaterialIcons name="logout" size={24} color="#BDBDBD" />
-            </Pressable>
-          ),
-          headerStyle: {
-            borderBottomWidth: 0.3,
-            borderBottomColor: "#B3B3B3",
-          },
-          headerTitleAlign: "center",
+          headerShown: false,
           tabBarIcon: ({ focused, size, color }) => (
             <SimpleLineIcons name="grid" size={24} color={color} />
           ),
@@ -91,16 +74,6 @@ export const Home = ({ navigation }) => {
         component={ProfileScreen}
         options={{
           headerShown: false,
-          headerTitleStyle: {
-            fontSize: 17,
-            fontFamily: "Roboto-Medium",
-            color: "#212121",
-          },
-          headerStyle: {
-            borderBottomWidth: 0.3,
-            borderBottomColor: "#B3B3B3",
-          },
-          headerTitleAlign: "center",
           tabBarIcon: ({ focused, size, color }) => (
             <Feather name="user" size={24} color={color} />
           ),

@@ -1,23 +1,37 @@
 import React from "react";
-import { Image, Text, View, StyleSheet } from "react-native";
+import { Image, Text, View, StyleSheet, TouchableOpacity } from "react-native";
 
 import { Feather } from "@expo/vector-icons";
 
-export const PostsScreenCard = ({ url, title, mapMark }) => {
+export const PostsScreenCard = ({
+  photo,
+  title,
+  location,
+  navigation,
+  coords,
+}) => {
   return (
     <View style={styles.container}>
       <View style={styles.imageContainer}>
-        <Image source={url} style={styles.postImage} />
+        <Image source={{ uri: photo }} style={styles.postImage} />
       </View>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.bottomContainer}>
         <View style={styles.comments}>
-          <Feather name="message-circle" size={24} color="#BDBDBD" />
+          <TouchableOpacity onPress={() => navigation.navigate("Comments")}>
+            <Feather name="message-circle" size={24} color="#BDBDBD" />
+          </TouchableOpacity>
           <Text style={styles.commentsQuantity}> 0</Text>
         </View>
         <View style={styles.location}>
-          <Feather name="map-pin" size={24} color="#BDBDBD" />
-          <Text style={styles.locationTitle}>{mapMark}</Text>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("Map", { coords, title, location })
+            }
+          >
+            <Feather name="map-pin" size={24} color="#BDBDBD" />
+          </TouchableOpacity>
+          <Text style={styles.locationTitle}>{location}</Text>
         </View>
       </View>
     </View>
@@ -29,13 +43,14 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   imageContainer: {
+    width: "100%",
+    height: 240,
     borderRadius: 8,
     marginBottom: 8,
     backgroundColor: "#212121",
   },
   postImage: {
     width: "100%",
-    height: 240,
     resizeMode: "cover",
     borderRadius: 8,
   },
