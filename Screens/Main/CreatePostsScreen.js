@@ -1,8 +1,10 @@
-import React from "react";
-import { useState, useEffect } from "react";
-import { Camera, CameraType } from "expo-camera";
-import * as Location from "expo-location";
-
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { Camera, CameraType } from 'expo-camera';
+import * as Location from 'expo-location';
+import { uploadBytes, ref, getDownloadURL } from 'firebase/storage';
+import { storage, db } from '../../firebase/config';
+import { collection, addDoc } from 'firebase/firestore';
 import {
   View,
   Text,
@@ -15,53 +17,59 @@ import {
   Button,
   Image,
   KeyboardAvoidingView,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import uuid from "react-native-uuid";
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import Toast from 'react-native-toast-message';
 
-import { FontAwesome } from "@expo/vector-icons";
-import { Feather } from "@expo/vector-icons";
-import { MaterialIcons } from "@expo/vector-icons";
-import { useToast } from "react-native-toast-notifications";
+//icons
+import { FontAwesome } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export const CreatePostScreen = ({ navigation }) => {
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const [cameraRef, setCameraRef] = useState(null);
-  const [isPhoto, setIsPhoto] = useState(false);
   const [photo, setPhoto] = useState(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const [location, setLocation] = useState(null);
   const [isKeyboardShown, setIsKeyboardShown] = useState(false);
   const [coords, setCoords] = useState(null);
 
-  const toast = useToast();
+  const { userId, nickname } = useSelector(state => state.auth);
 
   useEffect(() => {
     (async () => {
       await Location.requestForegroundPermissionsAsync();
     })();
 
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
       setIsKeyboardShown(true);
     });
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
       setIsKeyboardShown(false);
     });
+    (async () => {
+      const location = await Location.getCurrentPositionAsync();
+      setCoords(location);
+    })();
+
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
   }, []);
+
   if (!permission) {
     // Camera permissions are still loading
     return <View />;
   }
+
   if (!permission.granted) {
     // Camera permissions are not granted yet
     return (
       <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
+        <Text style={{ textAlign: 'center' }}>
           We need your permission to show the camera
         </Text>
         <Button onPress={requestPermission} title="grant permission" />
@@ -69,74 +77,116 @@ export const CreatePostScreen = ({ navigation }) => {
     );
   }
 
-  const getCoords = async () => {
-    const location = await Location.getCurrentPositionAsync();
-    setCoords(location);
-  };
-
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.canceled) {
-      setIsPhoto(true);
-      setPhoto(result.assets[0].uri);
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
+
   const toggleCameraType = () => {
-    setType((current) =>
+    setType(current =>
       current === CameraType.back ? CameraType.front : CameraType.back
     );
   };
+
+  const getAddress = async () => {
+    try {
+      const address = await Location.reverseGeocodeAsync({
+        latitude: coords.coords.latitude,
+        longitude: coords.coords.longitude,
+      });
+      setLocation(`${address[0].city}, ${address[0].country}`);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const takePhoto = async () => {
-    const photo = await cameraRef.takePictureAsync();
-    setPhoto(photo.uri);
-    setIsPhoto(true);
-    getCoords();
+    try {
+      const photo = await cameraRef.takePictureAsync();
+      setPhoto(photo.uri);
+      getAddress();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const resetPhotoState = () => {
-    setIsPhoto(false);
     setPhoto(null);
+    setLocation('');
+  };
+
+  const uploadPhoto = async () => {
+    try {
+      // Uploading photo
+      const response = await fetch(photo);
+      const file = await response.blob();
+      await uploadBytes(ref(storage, `photos/${file._data.blobId}`), file);
+      // get photo url
+      const photoUrl = await getDownloadURL(
+        ref(storage, `photos/${file._data.blobId}`)
+      );
+      return photoUrl;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const uploadPost = async () => {
+    try {
+      const photo = await uploadPhoto();
+      console.log(photo);
+      await addDoc(collection(db, 'posts'), {
+        userId,
+        nickname,
+        photo,
+        title,
+        location,
+        coords: coords.coords,
+        date: Date.now().toString(),
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const onSubmit = () => {
-    if (title === "" ?? photo) {
-      return toast.show("There are must be photo and title", {
-        type: "warning",
-        placement: "bottom",
-        duration: 2000,
-        offset: 30,
+    if ( photo === null && location === '') {
+      Toast.show({
+        type: 'error',
+        text1: 'There are must be photo and title',
       });
+      return;
     }
-
-    navigation.navigate("DefaultScreen", {
-      id: uuid.v4(),
-      photo,
-      title,
-      location,
-      coords,
-    });
+    uploadPost();
+    navigation.navigate('DefaultScreen');
     resetPhotoState();
-    setTitle("");
-    setLocation("");
+    setTitle('');
+    setLocation('');
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <View style={{ display: isKeyboardShown ? "none" : "flex" }}>
-          {isPhoto ? (
-            <View style={{ justifyContent: "center", alignItems: "center" }}>
+        <View style={{ display: isKeyboardShown ? 'none' : 'flex' }}>
+          {photo ? (
+            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
               <Image
                 style={{
-                  width: "100%",
+                  width: '100%',
                   height: 240,
-                  backgroundColor: "#F6F6F6",
+                  backgroundColor: '#F6F6F6',
                   borderRadius: 8,
                 }}
                 source={{ uri: photo }}
@@ -144,8 +194,8 @@ export const CreatePostScreen = ({ navigation }) => {
               <View
                 style={{
                   ...styles.icnoBg,
-                  position: "absolute",
-                  backgroundColor: "rgba(255, 255, 255, 0.3);",
+                  position: 'absolute',
+                  backgroundColor: 'rgba(255, 255, 255, 0.3);',
                 }}
               >
                 <TouchableOpacity onPress={resetPhotoState}>
@@ -157,14 +207,14 @@ export const CreatePostScreen = ({ navigation }) => {
             <Camera
               style={styles.camera}
               type={type}
-              ref={(ref) => setCameraRef(ref)}
+              ref={ref => setCameraRef(ref)}
             >
               <View style={styles.icnoBg}>
                 <TouchableOpacity onPress={takePhoto}>
                   <FontAwesome name="camera" size={24} color="#BDBDBD" />
                 </TouchableOpacity>
               </View>
-              <View style={{ position: "absolute", right: 10, bottom: 10 }}>
+              <View style={{ position: 'absolute', right: 10, bottom: 10 }}>
                 <TouchableOpacity onPress={toggleCameraType}>
                   <MaterialIcons
                     name="flip-camera-android"
@@ -178,14 +228,14 @@ export const CreatePostScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity onPress={pickImage} style={{ width: 100 }}>
           <Text style={styles.loadBtnText}>
-            {photo ? "Edit a photo" : "Load a photo"}
+            {photo ? 'Edit a photo' : 'Load a photo'}
           </Text>
         </TouchableOpacity>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : ""}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : ''}>
           <View style={{ ...styles.inputContainer, marginBottom: 16 }}>
             <TextInput
               value={title}
-              onChangeText={(text) => setTitle(text)}
+              onChangeText={text => setTitle(text)}
               style={styles.inputTitle}
               placeholder="Title..."
               placeholderTextColor="#BDBDBD"
@@ -195,7 +245,7 @@ export const CreatePostScreen = ({ navigation }) => {
             <Feather name="map-pin" size={24} color="#BDBDBD" />
             <TextInput
               value={location}
-              onChangeText={(text) => setLocation(text)}
+              onChangeText={text => setLocation(text)}
               style={{ ...styles.inputTitle, marginLeft: 4 }}
               placeholder="Location..."
               placeholderTextColor="#BDBDBD"
@@ -205,15 +255,14 @@ export const CreatePostScreen = ({ navigation }) => {
         <TouchableOpacity
           style={{
             ...styles.submitBtn,
-            backgroundColor: photo ? "#FF6C00" : "#F6F6F6",
-            display: isKeyboardShown ? "none" : "flex",
+            backgroundColor: photo ? '#FF6C00' : '#F6F6F6',
           }}
           onPress={onSubmit}
         >
           <Text
             style={{
               ...styles.submitTitle,
-              color: photo ? "#FFFFFF" : "#BDBDBD",
+              color: photo ? '#FFFFFF' : '#BDBDBD',
             }}
           >
             Post
@@ -223,71 +272,72 @@ export const CreatePostScreen = ({ navigation }) => {
     </TouchableWithoutFeedback>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingTop: 32,
   },
   camera: {
-    width: "100%",
+    width: '100%',
     height: 240,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
     height: 240,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: '#F6F6F6',
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: '#E8E8E8',
     borderRadius: 8,
     marginBottom: 8,
   },
   icnoBg: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     width: 60,
     height: 60,
     borderRadius: 50,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
   },
   loadBtnText: {
     marginTop: 8,
-    fontFamily: "Roboto-Regular",
+    fontFamily: 'Roboto-Regular',
     fontSize: 16,
-    color: "#BDBDBD",
+    color: '#BDBDBD',
     marginBottom: 32,
   },
   inputTitle: {
-    width: "100%",
-    fontFamily: "Roboto-Regular",
+    width: '100%',
+    fontFamily: 'Roboto-Regular',
     fontSize: 16,
-    color: "#212121",
+    color: '#212121',
   },
   inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E8E8E8",
+    borderBottomColor: '#E8E8E8',
   },
   submitBtn: {
     marginTop: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
     height: 50,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: '#F6F6F6',
     borderRadius: 100,
   },
   submitTitle: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: 'Roboto-Regular',
     fontSize: 16,
-    color: "#BDBDBD",
+    color: '#BDBDBD',
   },
 });

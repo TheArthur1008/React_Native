@@ -1,52 +1,56 @@
-import React from "react";
-import { DefaultPostsScreen } from "../Nested/DefaultPostsScreen";
-import { MapScreen } from "../Nested/MapScreen";
-import { CommentsScreen } from "../Nested/CommentsScreen";
+import { authSingOutUser } from '../../redux/auth/operations';
+import { useDispatch } from 'react-redux';
+import { createStackNavigator } from '@react-navigation/stack';
+import { DefaultPostsScreen } from '../Nested/DefaultPostsScreen';
+import { MapScreen } from '../Nested/MapScreen';
+import { CommentsScreen } from '../Nested/CommentsScreen';
 
-import { Pressable } from "react-native";
+import { Pressable } from 'react-native';
 
-import { MaterialIcons } from "@expo/vector-icons";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { MaterialIcons } from '@expo/vector-icons';
 
-const NestedScreen = createNativeStackNavigator();
+const NestedScreen = createStackNavigator();
 
 export const PostsScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+
   return (
-    <NestedScreen.Navigator initialRouteName="DefaultScreen">
+    <NestedScreen.Navigator initialRouteName="Posts">
       <NestedScreen.Screen
         name="DefaultScreen"
         component={DefaultPostsScreen}
         options={{
-          headerTitle: "Posts",
+          headerTitle: 'Posts',
           headerTitleStyle: {
             fontSize: 17,
-            fontFamily: "Roboto-Medium",
-            color: "#212121",
+            fontFamily: 'Roboto-Medium',
+            color: '#212121',
           },
+          headerLeft: false,
           headerRight: () => (
             <Pressable
-              onPress={() => navigation.navigate("Login")}
-              style={{ position: "absolute", right: 16 }}
+              onPress={() => dispatch(authSingOutUser())}
+              style={{ position: 'absolute', right: 16 }}
             >
               <MaterialIcons name="logout" size={24} color="#BDBDBD" />
             </Pressable>
           ),
           headerStyle: {
             borderBottomWidth: 0.3,
-            borderBottomColor: "#B3B3B3",
+            borderBottomColor: '#B3B3B3',
           },
-          headerTitleAlign: "center",
+          headerTitleAlign: 'center',
         }}
       />
       <NestedScreen.Screen
         name="Map"
         component={MapScreen}
-        options={{ headerTitleAlign: "center" }}
+        options={{ headerTitleAlign: 'center' }}
       />
       <NestedScreen.Screen
         name="Comments"
         component={CommentsScreen}
-        options={{ headerTitleAlign: "center" }}
+        options={{ headerTitleAlign: 'center' }}
       />
     </NestedScreen.Navigator>
   );
