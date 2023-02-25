@@ -35,6 +35,7 @@ export const CreatePostScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
   const [isKeyboardShown, setIsKeyboardShown] = useState(false);
   const [coords, setCoords] = useState(null);
+  const [country, setCountry] = useState(null);
 
   const { userId, nickname } = useSelector(state => state.auth);
 
@@ -107,6 +108,7 @@ export const CreatePostScreen = ({ navigation }) => {
         longitude: coords.coords.longitude,
       });
       setLocation(`${address[0].city}, ${address[0].country}`);
+      setCountry(address[0].country);
     } catch (error) {
       console.log(error);
     }
@@ -155,6 +157,7 @@ export const CreatePostScreen = ({ navigation }) => {
         location,
         coords: coords.coords,
         date: Date.now().toString(),
+        country,
       });
     } catch (error) {
       console.log(error);
@@ -162,7 +165,7 @@ export const CreatePostScreen = ({ navigation }) => {
   };
 
   const onSubmit = () => {
-    if ( photo === null && location === '') {
+    if (photo === null && location === '') {
       Toast.show({
         type: 'error',
         text1: 'There are must be photo and title',
